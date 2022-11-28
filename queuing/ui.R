@@ -1,33 +1,48 @@
-#
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
+library(ggplot2)
+library(plotly)
+library(flexdashboard)
+library(shinydashboard)
+library(shinyjs)
+library(formattable)
+library(shinycssloaders)
+library(shinyWidgets)
 
 # Define UI for application that draws a histogram
-shinyUI(fluidPage(
-
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-            plotOutput("distPlot")
+shinyUI(
+    fluidPage(
+        dashboardPage(
+            dashboardHeader(
+                title = "Queuing models"
+            ),
+            dashboardSidebar(
+                width = 300,
+                h4('Arrivals'),
+                selectInput('population',
+                            label = "Population",
+                            choices = c('limited', 'unlimited'),
+                            selected = 'unlimited',
+                            multiple = FALSE,
+                ),
+                selectInput('arrivals_put',
+                            label = "Arrivals per unit time",
+                            choices = c('Poisson', 'Random'),
+                            selected = 'Poisson',
+                            multiple = FALSE,
+                ),
+                selectInput('cust_bhvr',
+                            label = "Customer behavior",
+                            choices = c('patient', 'balk and renegade'),
+                            selected = 'patient',
+                            multiple = FALSE,
+                ),
+                h4('Queue discipline'),
+                h4('Service facility')
+                
+            ),
+            dashboardBody(
+                
+            )
         )
     )
-))
+)
