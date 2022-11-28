@@ -17,7 +17,7 @@ shinyUI(
             ),
             dashboardSidebar(
                 width = 300,
-                h4('Arrivals'),
+                column(width = 11, h4('Arrivals')),
                 selectInput('population',
                             label = "Population",
                             choices = c('limited', 'unlimited'),
@@ -36,12 +36,18 @@ shinyUI(
                             selected = 'patient',
                             multiple = FALSE,
                 ),
-                h4('Queue discipline'),
-                h4('Service facility')
-                
+                conditionalPanel("input.arrivals_put == 'Poisson'", 
+                                 sliderInput('no_arrivals', 'number of arrivals per unit time', 0, 100, 3)),
+                column(width=11, h4('Queue discipline')),
+                column(width=11, h4('Service facility')),
+                sliderInput('no_served', 
+                  'number ofcustomers served per unit time', 
+                  min = 0, 
+                  max = 100, 
+                  value = 4)
             ),
             dashboardBody(
-                
+                textOutput("report")
             )
         )
     )
