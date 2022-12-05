@@ -7,6 +7,7 @@ library(shinyjs)
 library(formattable)
 library(shinycssloaders)
 library(shinyWidgets)
+library(plotly)
 
 # Define UI for application that draws a histogram
 shinyUI(
@@ -17,40 +18,51 @@ shinyUI(
             ),
             dashboardSidebar(
                 width = 400,
+                column(width=11, 
+                       selectInput("system", "Queuing system", c("M/M/1", "M/M/c", "M/M/1/k"), "M/M/1")),
+                       #conditionalPanel("input.system == 'M/M/1'",
                 column(width = 11, h4('Arrivals')),
-                # selectInput('population',
-                #             label = "Population",
-                #             choices = c('limited', 'unlimited'),
-                #             selected = 'unlimited',
-                #             multiple = FALSE,
-                # ),
-                # selectInput('arrivals_put',
-                #             label = "Arrivals per unit time",
-                #             choices = c('Poisson', 'Random'),
-                #             selected = 'Poisson',
-                #             multiple = FALSE,
-                # ),
-                # selectInput('cust_bhvr',
-                #             label = "Customer behavior",
-                #             choices = c('patient', 'balk and renegade'),
-                #             selected = 'patient',
-                #             multiple = FALSE,
-                # ),
-                #conditionalPanel("input.arrivals_put == 'Poisson'", 
-                                 sliderInput('no_arrivals', 'number of arrivals per unit time', 0, 100, 3),
-                #),
-                column(width=11, h4('Queue discipline')),
-                column(width=11, h4('Service facility')),
-                sliderInput('no_served', 
-                  'number of customers served per unit time', 
-                  min = 0, 
-                  max = 100, 
-                  value = 4)
-            ),
+                sliderInput('no_arrivals', 'number of arrivals per unit time', 0, 100, 3),
+                                        #),
+                                        column(width=11, h4('Queue discipline')),
+                                        column(width=11, h4('Service facility')),
+                                        conditionalPanel("input.system == 'M/M/c'",
+                                                         sliderInput('n_servers', "NUmber of servers",1,10,2)
+                                        ),
+                                        sliderInput('no_served', 
+                                                    'number of customers served per unit time', 
+                                                    min = 0, 
+                                                    max = 100, 
+                                                    value = 4)
+                                 
+                ),
+
+          
             dashboardBody(
                 plotOutput("dist"),
                 textOutput("report")
+                #plotlyOutput("animation")
             )
         )
     )
 )
+
+# selectInput('population',
+#             label = "Population",
+#             choices = c('limited', 'unlimited'),
+#             selected = 'unlimited',
+#             multiple = FALSE,
+# ),
+# selectInput('arrivals_put',
+#             label = "Arrivals per unit time",
+#             choices = c('Poisson', 'Random'),
+#             selected = 'Poisson',
+#             multiple = FALSE,
+# ),
+# selectInput('cust_bhvr',
+#             label = "Customer behavior",
+#             choices = c('patient', 'balk and renegade'),
+#             selected = 'patient',
+#             multiple = FALSE,
+# ),
+#conditionalPanel("input.arrivals_put == 'Poisson'", 
