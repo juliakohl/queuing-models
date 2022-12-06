@@ -8,6 +8,7 @@ library(formattable)
 library(shinycssloaders)
 library(shinyWidgets)
 library(plotly)
+library(kableExtra)
 
 # Define UI for application that draws a histogram
 shinyUI(
@@ -20,28 +21,33 @@ shinyUI(
                 width = 400,
                 column(width=11, 
                        selectInput("system", "Queuing system", c("M/M/1", "M/M/c", "M/M/1/k"), "M/M/1")),
-                       #conditionalPanel("input.system == 'M/M/1'",
                 column(width = 11, h4('Arrivals')),
                 sliderInput('no_arrivals', 'number of arrivals per unit time', 0, 100, 3),
-                                        #),
-                                        column(width=11, h4('Queue discipline')),
-                                        column(width=11, h4('Service facility')),
-                                        conditionalPanel("input.system == 'M/M/c'",
-                                                         sliderInput('n_servers', "NUmber of servers",1,10,2)
-                                        ),
-                                        sliderInput('no_served', 
-                                                    'number of customers served per unit time', 
-                                                    min = 0, 
-                                                    max = 100, 
-                                                    value = 4)
+                column(width=11, h4('Queue discipline')),
+                column(width=11, h4('Service facility')),
+                conditionalPanel("input.system == 'M/M/c'",
+                       sliderInput('n_servers', "NUmber of servers",1,10,2)
+                ),
+                sliderInput('no_served', 
+                            'number of customers served per unit time', 
+                             min = 0, 
+                             max = 100, 
+                             value = 4),
+                actionButton('save', 'Save Results')
                                  
                 ),
+              
 
           
             dashboardBody(
-                plotOutput("dist"),
-                textOutput("report")
+                h2('Probability Distribution of Arrivals'),
+                #plotOutput("dist"),
+                plotlyOutput('dist'),
+                h2('Model Report'),
+                textOutput("report"),
                 #plotlyOutput("animation")
+                h2('Model Comparison'),
+                tableOutput("eval")
             )
         )
     )
