@@ -55,16 +55,22 @@ shinyServer(function(input, output, session) {
       x <- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
       x <- rbind(x, c(0, input$totalunits - sum(x$count)))
       
+      # input data
       fig <- plot_ly(x=x$n, y=x$count, type = "bar", name = 'Input data')
       
       m <- x$n * x$count
       lambda <- sum(m) / input$totalunits
       cat(lambda)
       
-      tmp <- data.frame(y = dpois(seq(0,nrow(x)-1),lambda)*420, numbwe = seq(0,nrow(x)-1))
-      cat( seq(0,nrow(x)-1))
+      # poisson
+      tmp <- data.frame(y = dpois(seq(0,nrow(x)-1),lambda)*420, x = seq(0,nrow(x)-1))
+      fig <- fig %>% add_trace(tmp, x =tmp$x, y=tmp$y, type = 'scatter', mode='lines', name = 'Poisson')
       
-      fig <- fig %>% add_trace(tmp, x =tmp$numbwe, y=tmp$y, type = 'scatter', mode='lines', name = 'Poisson')
+      # normal dist
+      tmp <- data.frame(y = dnorm(seq(0,nrow(x)-1),lambda)*420, x = seq(0,nrow(x)-1))
+      fig <- fig %>% add_trace(tmp, x =tmp$x, y=tmp$y, type = 'scatter', mode='lines', name = 'Normal')
+      
+      
       fig
     })
     
