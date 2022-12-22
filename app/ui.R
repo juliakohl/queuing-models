@@ -26,9 +26,9 @@ shinyUI(
                                    ".csv",
                                    ".xlsx")
                                  ),
-                       numericInput("column", "Column of arrival time", value = 1),
+                       numericInput("column", "Column of arrival time", value = 2),
                        numericInput("unittime", "One unit time", value = "0.1"),
-                       numericInput('totalunits', 'Total number of units in period', value = 0),
+                       numericInput('totalunits', 'Total number of units in period', value = 420),
                        actionButton("read", "read data"),
                        selectInput("system", "Queuing system", c("M/M/1", "M/M/c", "M/M/1/k"), "M/M/1")),
                 column(width = 11, h4('Arrivals')),
