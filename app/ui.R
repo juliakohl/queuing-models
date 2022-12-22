@@ -1,10 +1,8 @@
 library(shiny)
-library(ggplot2)
 library(plotly)
 library(flexdashboard)
 library(shinydashboard)
 library(shinyjs)
-library(formattable)
 library(shinycssloaders)
 library(shinyWidgets)
 library(plotly)
@@ -20,6 +18,18 @@ shinyUI(
             dashboardSidebar(
                 width = 400,
                 column(width=11, 
+                       fileInput("arrivals", 
+                                 "Arrival data",
+                                 accept = c(
+                                   "text/csv",
+                                   "text/comma-separated-values,text/plain",
+                                   ".csv",
+                                   ".xlsx")
+                                 ),
+                       numericInput("column", "Column of arrival time", value = 1),
+                       numericInput("unittime", "One unit time", value = "0.1"),
+                       numericInput('totalunits', 'Total number of units in period', value = 0),
+                       actionButton("read", "read data"),
                        selectInput("system", "Queuing system", c("M/M/1", "M/M/c", "M/M/1/k"), "M/M/1")),
                 column(width = 11, h4('Arrivals')),
                 sliderInput('no_arrivals', 'number of arrivals per unit time', 0, 100, 3),
@@ -40,6 +50,8 @@ shinyUI(
 
           
             dashboardBody(
+                h2("Input data distribution"),
+                plotlyOutput('inputdist'),
                 h2('Probability Distribution of Arrivals'),
                 #plotOutput("dist"),
                 plotlyOutput('dist'),

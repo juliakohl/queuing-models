@@ -2,6 +2,7 @@ library(shiny)
 library(queueing)
 library(plotly)
 library(kableExtra)
+library(readxl)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
@@ -26,7 +27,62 @@ shinyServer(function(input, output, session) {
     return(summary(output_m)$el)
   })
   
+  
+  data_raw <- reactive({
+    inFile <- input$arrivals
+    
+    if (is.null(inFile))
+      return(NULL)
+    
+    return(read_excel(inFile$datapath,
+               sheet = "Sheet1"))
+  })
+  
   evaluation <- data.frame()
+  data <- NULL
+  
+  observeEvent(input$read, {
+    inFile <- input$arrivals
+    
+    if (is.null(inFile))
+      return(NULL)
+    
+    data <<- read_excel(inFile$datapath,
+               sheet = "Sheet1")
+    
+    output$inputdist <- renderPlotly({
+
+      x <- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
+      x <- rbind(x, c(0, input$totalunits - sum(x$count)))
+      
+      plot_ly(x=x$n, y=x$count, type = "bar")
+    })
+    
+    output$dist <- renderPlotly({
+      # lambda = input$no_arrivals
+      # mu = input$no_served
+      # 
+      # data <- data.frame(y = dpois(seq(0,2*lambda),lambda), x = seq(0,2*lambda))
+      # fig <- plot_ly(data, x = ~x, y = ~y, type = 'scatter', mode = 'lines')
+      # 
+      # fig
+      
+      if(is.null(data)){
+        return(NULL)
+      }
+      
+      x <- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
+      x <- rbind(x, c(0, input$totalunits - sum(x$count)))
+      
+      m <- x$n * x$count
+      lambda <- sum(m) / input$totalunits
+      
+      tmp <- data.frame(y = dpois(seq(0,2*lambda),lambda), x = seq(0,2*lambda))
+      fig <- plot_ly(tmp, x = ~x, y = ~y, type = 'scatter', mode = 'lines')
+      
+      fig
+    })  
+  })
   
   observeEvent(input$save, {
     if(nrow(evaluation)==0){
@@ -34,7 +90,6 @@ shinyServer(function(input, output, session) {
     }else{
       evaluation <<- rbind(evaluation, el())
     }
-    cat('saved')
     
     output$eval <- function () {evaluation %>% 
       knitr::kable("html") %>%
@@ -105,14 +160,6 @@ shinyServer(function(input, output, session) {
   #   }
   # })
   
-  output$dist <- renderPlotly({
-    lambda = input$no_arrivals
-    mu = input$no_served
-    
-    data <- data.frame(y = dpois(seq(0,2*lambda),lambda), x = seq(0,2*lambda))
-    fig <- plot_ly(data, x = ~x, y = ~y, type = 'scatter', mode = 'lines')
-    
-    fig
-  })  
+  
   
 })
