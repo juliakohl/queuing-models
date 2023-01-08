@@ -12,12 +12,25 @@ shinyServer(function(input, output, session) {
   #inputs <- reactive({c(input$arrivals_put, input$no_served)})
   
   el <- reactive({
-    lambda = input$no_arrivals
-    mu = input$no_served
-    if(input$system == "M/M/1"){
+    inFile <- input$arrivals
+    
+    if (is.null(inFile))
+      return(NULL)
+    
+    data <- read_excel(inFile$datapath,
+                        sheet = "Sheet1")
+    arrivals <- c()
+    
+    x <- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
+    x <- rbind(x, c(0, input$totalunits - sum(x$count)))
+    
+    mu <- x$n * x$count
+    lambda <- sum(m) / input$totalunits
+    mu <- input$no_served #sum(m)
+    if(input$n_servers == 1){
       input_m <- NewInput.MM1(lambda = lambda, mu = mu, n = 0)
     }else{
-      if(input$system == "M/M/c"){
+      if(input$n_servers > 1){
         c = input$n_servers
         input_m <- NewInput.MMC(lambda=lambda, mu=mu, c=c, n=0, method=0)
       }
@@ -25,7 +38,6 @@ shinyServer(function(input, output, session) {
     
     # Create queue class object
     output_m <- QueueingModel(input_m)
-    
     return(summary(output_m)$el)
   })
   
@@ -59,6 +71,8 @@ shinyServer(function(input, output, session) {
     m <<- x$n * x$count
     lambda <<- sum(m) / input$totalunits
     
+    updateSliderInput(session = session, 'no_served', value = lambda + 1, min = ceiling (lambda))
+    
     
     output$inputdist <- renderPlotly({
       
@@ -81,36 +95,68 @@ shinyServer(function(input, output, session) {
       fig
     })
     
-    if(input$arrival_bhvr == 'Poisson'){
-      arrivals <<- round(rpois(50,lambda))
-    }else{ 
-      if(input$arrival_bhvr == 'Normal'){
-        arrivals <<- round(rnorm(50,lambda))
-        arrivals[arrivals < 0] <- 0
+  })
+  
+  observeEvent(input$simulate, {
+    
+    # if(input$arrival_bhvr == 'Poisson'){
+    #   arrivals <<- round(rpois(50,lambda))
+    # }else{ 
+    #   if(input$arrival_bhvr == 'Normal'){
+    #     arrivals <<- round(rnorm(50,lambda))
+    #     arrivals[arrivals < 0] <- 0
+    #   }else{
+    #     if(input$arrival_bhvr == 'Constant'){
+    #       arrivals <<- rep(round(lambda),50)
+    #     }
+    #   }
+    # }
+    
+    arrivals <<- round(rpois(50,lambda))
+    queue <<- rep(0,50)
+    n <- 2
+    for (a in arrivals) {
+      if(n>length(arrivals)){ next }
+      if(n>2){
+        queue[n] <<- queue[n-1] + a - input$no_served
+        queue[n] <<- ifelse(queue[n] < 0, 0, queue[n])
+      }else{
+        queue[n] <<- ifelse(a>input$no_served,a-input$no_served,0)
       }
+      n <- n+1
     }
     
     output$dist <- renderPlotly({
-      plot_ly(x = seq(1,50), y = arrivals, type = 'bar')
+      plot_ly(x = seq(1,50), y = arrivals, type = 'bar', name = 'arrivals') %>% add_trace(y=queue, name='queue')
     })
     
-    # output$dist <- renderPlotly({
-    #   
-    #   if(is.null(data)){
-    #     return(NULL)
-    #   }
-    #   
-    #   x <- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
-    #   x <- rbind(x, c(0, input$totalunits - sum(x$count)))
-    #   
-    #   m <- x$n * x$count
-    #   lambda <- sum(m) / input$totalunits
-    #   
-    #   tmp <- data.frame(y = dpois(seq(0,2*lambda),lambda), x = seq(0,2*lambda))
-    #   fig <- plot_ly(tmp, x = ~x, y = ~y, type = 'scatter', mode = 'lines')
-    #   
-    #   fig
-    # })  
+    
+    output$report <- renderText({
+      x <<- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
+      x <<- rbind(x, c(0, input$totalunits - sum(x$count)))
+      
+      m <<- x$n * x$count
+      lambda <<- sum(m) / input$totalunits
+      if(input$n_servers == 1){
+        input_m <- NewInput.MM1(lambda = lambda, mu = input$no_served, n = 0)
+      }else{
+        if(input$n_servers > 1){
+          c = input$n_servers
+          input_m <- NewInput.MMC(lambda=lambda, mu=input$no_served, c=c, n=0, method=0)
+        }
+      }
+      
+      # Create queue class object
+      output_m <- QueueingModel(input_m)
+      
+      #View(summary(output_m)$el)
+      
+      # Get queue model report
+      y <- capture.output(Report(output_m))
+      return(y)
+    })
+    
+    
   })
   
   observeEvent(input$save, {
@@ -120,39 +166,22 @@ shinyServer(function(input, output, session) {
       evaluation <<- rbind(evaluation, el())
     }
     
-    output$eval <- function () {evaluation %>% 
-      knitr::kable("html") %>%
-      kable_styling("striped", full_width = T)
+    tmp <- data.frame(`Average arrival rate (lambda)` = evaluation$lambda, `Service rate (mu)` = evaluation$mu)
+    
+    #Probability of zero unit in the queue (Po)
+    #average queue length (Lq )
+    #Average number of units in the system (Ls)
+    #Average waiting time of an arrival (Wq) 
+    #Average waiting time of an arrival in the system (Ws) 
+    
+    output$eval <- function () {
+      #evaluation %>% 
+      tmp %>% 
+        knitr::kable("html") %>%
+        kable_styling("striped", full_width = T)
     }
   })
   
-  observeEvent(input$no_served, {
-    updateSliderInput(session, "no_arrivals", max = input$no_served -1)
-  })
   
-  output$report <- renderText({
-    x <<- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
-    x <<- rbind(x, c(0, input$totalunits - sum(x$count)))
-    
-    m <<- x$n * x$count
-    lambda <<- sum(m) / input$totalunits
-    if(input$system == "M/M/1"){
-      input_m <- NewInput.MM1(lambda = lambda, mu = sum(m), n = 0)
-    }else{
-      if(input$system == "M/M/c"){
-        c = input$n_servers
-        input_m <- NewInput.MMC(lambda=lambda, mu=sum(m), c=c, n=0, method=0)
-      }
-    }
-    
-    # Create queue class object
-    output_m <- QueueingModel(input_m)
-    
-    #View(summary(output_m)$el)
-    
-    # Get queue model report
-    y <- capture.output(Report(output_m))
-    return(y)
-  })
   
 })

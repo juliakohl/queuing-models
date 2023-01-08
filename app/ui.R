@@ -29,31 +29,30 @@ shinyUI(
                        numericInput("column", "Column of arrival time", value = 2),
                        #numericInput("unittime", "One unit time", value = "0.1"),
                        numericInput('totalunits', 'Total number of units in period', value = 420),
-                       actionButton("read", "read data"),
-                       selectInput("system", "Queuing system", c("M/M/1", "M/M/c", "M/M/1/k"), "M/M/1")),
-                column(width = 11, h4('Arrivals'),
-                       selectInput('arrival_bhvr', 'Arrival distribution', c('Poisson', 'Normal', 'Constant'), 'Poisson')),
+                       actionButton("read", "read data")),
+                       #selectInput("system", "Queuing system", c("M/M/1", "M/M/c", "M/M/1/k"), "M/M/1")),
+                column(width = 11, h4('Arrivals')),
+                       #selectInput('arrival_bhvr', 'Arrival distribution', c('Poisson', 'Normal', 'Constant'), 'Poisson')),
                 #sliderInput('no_arrivals', 'number of arrivals per unit time', 0, 100, 3),
                 column(width=11, h4('Queue discipline')),
                 column(width=11, h4('Service facility')),
-                conditionalPanel("input.system == 'M/M/c'",
-                       sliderInput('n_servers', "NUmber of servers",1,10,2)
-                ),
+                #conditionalPanel("input.system == 'M/M/c'",
+                sliderInput('n_servers', "Number of servers",1,10,2),
+                #),
                 sliderInput('no_served', 
                             'number of customers served per unit time', 
                              min = 0, 
                              max = 100, 
                              value = 4),
+                actionButton('simulate', 'Simulate data'),
                 actionButton('save', 'Save Results')
                                  
                 ),
-              
-
           
             dashboardBody(
                 h2("Input data distribution"),
                 plotlyOutput('inputdist'),
-                h2('Probability Distribution of Arrivals'),
+                h2('Simulation of 50 periods'),
                 #plotOutput("dist"),
                 plotlyOutput('dist'),
                 h2('Model Report'),
