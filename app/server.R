@@ -12,33 +12,44 @@ shinyServer(function(input, output, session) {
   #inputs <- reactive({c(input$arrivals_put, input$no_served)})
   
   el <- reactive({
-    inFile <- input$arrivals
-    
-    if (is.null(inFile))
-      return(NULL)
-    
-    data <- read_excel(inFile$datapath,
-                        sheet = "Sheet1")
-    arrivals <- c()
-    
-    x <- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
-    x <- rbind(x, c(0, input$totalunits - sum(x$count)))
-    
-    mu <- x$n * x$count
-    lambda <- sum(m) / input$totalunits
+    # inFile <- input$arrivals
+    # 
+    # if (is.null(inFile))
+    #   return(NULL)
+    # 
+    # data <- read_excel(inFile$datapath,
+    #                     sheet = "Sheet1")
+    # arrivals <- c()
+    # 
+    # x <- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
+    # x <- rbind(x, c(0, input$totalunits - sum(x$count)))
+    # 
+    #mu <- x$n * x$count
+    lambda <- input$lambda #sum(m) / input$totalunits
     mu <- input$no_served #sum(m)
-    if(input$n_servers == 1){
-      input_m <- NewInput.MM1(lambda = lambda, mu = mu, n = 0)
+    if(input$capacity == 0){
+      if(input$n_servers == 1){
+        input_m <- NewInput.MM1(lambda = lambda, mu = input$no_served, n = 0)
+      }else{
+        if(input$n_servers > 1){
+          c = input$n_servers
+          input_m <- NewInput.MMC(lambda=lambda, mu=input$no_served, c=c, n=0, method=0)
+        }
+      }
     }else{
-      if(input$n_servers > 1){
-        c = input$n_servers
-        input_m <- NewInput.MMC(lambda=lambda, mu=mu, c=c, n=0, method=0)
+      if(input$n_servers == 1){
+        input_m <- NewInput.MM1K(lambda = lambda, mu = input$no_served, k = input$capacity)
+      }else{
+        if(input$n_servers > 1){
+          c = input$n_servers
+          input_m <- NewInput.MMCK(lambda=lambda, mu=input$no_served, c=c, k = input$capacity)
+        }
       }
     }
     
     # Create queue class object
     output_m <- QueueingModel(input_m)
-    return(summary(output_m)$el)
+    return(cbind(summary(output_m)$el,Throughput=output_m$Throughput))
   })
   
   
@@ -71,21 +82,24 @@ shinyServer(function(input, output, session) {
     m <<- x$n * x$count
     lambda <<- sum(m) / input$totalunits
     
-    updateSliderInput(session = session, 'no_served', value = lambda + 1, min = ceiling (lambda))
+    #updateNumericInput(session = session, 'no_served', value = lambda + 1, min = ceiling(lambda))
+    updateNumericInput(session = session, 'lambda', value = lambda, min = ceiling (lambda))
     
     
     output$inputdist <- renderPlotly({
       
       # input data
-      fig <- plot_ly(x=x$n, y=x$count, type = "bar", name = 'Input data')
+      fig <- plot_ly(x=x$n, y=x$count, type = "bar", name = 'Input data') %>% 
+        layout(xaxis = list(title = 'Number of arrivals per unit time'),
+               yaxis = list(title = 'Count'))
       
       # poisson
       tmp <- data.frame(y = dpois(seq(0,nrow(x)-1),lambda)*420, x = seq(0,nrow(x)-1))
       fig <- fig %>% add_trace(tmp, x =tmp$x, y=tmp$y, type = 'scatter', mode='lines', name = 'Poisson')
       
       # normal dist
-      tmp <- data.frame(y = dnorm(seq(0,nrow(x)-1),lambda)*420, x = seq(0,nrow(x)-1))
-      fig <- fig %>% add_trace(tmp, x =tmp$x, y=tmp$y, type = 'scatter', mode='lines', name = 'Normal')
+      #tmp <- data.frame(y = dnorm(seq(0,nrow(x)-1),lambda)*420, x = seq(0,nrow(x)-1))
+      #fig <- fig %>% add_trace(tmp, x =tmp$x, y=tmp$y, type = 'scatter', mode='lines', name = 'Normal')
       
       #gamma
       #fit <- fitdist(data[[input$column]], distr = "gamma", method = "mle")
@@ -112,39 +126,68 @@ shinyServer(function(input, output, session) {
     #   }
     # }
     
-    arrivals <<- round(rpois(50,lambda))
-    queue <<- rep(0,50)
-    n <- 2
+    arrivals <<- round(rpois(30,input$lambda))
+    queue <<- rep(0,30)
+    overflow <<- rep(0,30)
+    n <- 1
+    
     for (a in arrivals) {
       if(n>length(arrivals)){ next }
-      if(n>2){
-        queue[n] <<- queue[n-1] + a - input$no_served
-        queue[n] <<- ifelse(queue[n] < 0, 0, queue[n])
+      if(n>1){
+        queue[n] <<- ifelse(queue[n-1] <= input$no_served,0,queue[n-1] - input$no_served)
+        queue[n] <<- queue[n] + a
+          #queue[n-1] + a - input$no_served
+          #queue[n] <<- ifelse(queue[n] < 0, 0, queue[n])
       }else{
-        queue[n] <<- ifelse(a>input$no_served,a-input$no_served,0)
+        queue[n] <<- a
       }
+      
+      if(input$capacity > 0){
+        if(queue[n] > input$capacity){
+          overflow[n] <<- queue[n] - input$capacity
+          queue[n] <<- queue[n] - overflow[n]
+        }
+      }
+      
       n <- n+1
     }
     
     output$dist <- renderPlotly({
-      plot_ly(x = seq(1,50), y = arrivals, type = 'bar', name = 'arrivals') %>% add_trace(y=queue, name='queue')
+      fig <- plot_ly(x = seq(1,30), y = arrivals, type = 'bar', name = 'arrivals', marker = list(color='cadetblue')) %>%
+        add_trace(y=queue, name='queue', marker = list(color='green'))
+      if(input$capacity > 0){
+        fig <- fig %>% add_trace(y=overflow, name='Capacity overflow', marker = list(color='red'))
+      }
+      fig
     })
     
     
     output$report <- renderText({
-      x <<- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
-      x <<- rbind(x, c(0, input$totalunits - sum(x$count)))
+      #x <<- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
+      #x <<- rbind(x, c(0, input$totalunits - sum(x$count)))
       
-      m <<- x$n * x$count
-      lambda <<- sum(m) / input$totalunits
-      if(input$n_servers == 1){
-        input_m <- NewInput.MM1(lambda = lambda, mu = input$no_served, n = 0)
+      #m <<- x$n * x$count
+      #lambda <<- sum(m) / input$totalunits
+      if(input$capacity == 0){
+        if(input$n_servers == 1){
+          input_m <- NewInput.MM1(lambda = input$lambda, mu = input$no_served, n = 0)
+        }else{
+          if(input$n_servers > 1){
+            c = input$n_servers
+            input_m <- NewInput.MMC(lambda=input$lambda, mu=input$no_served, c=c, n=0, method=0)
+          }
+        }
       }else{
-        if(input$n_servers > 1){
-          c = input$n_servers
-          input_m <- NewInput.MMC(lambda=lambda, mu=input$no_served, c=c, n=0, method=0)
+        if(input$n_servers == 1){
+          input_m <- NewInput.MM1K(lambda = input$lambda, mu = input$no_served, k = input$capacity)
+        }else{
+          if(input$n_servers > 1){
+            c = input$n_servers
+            input_m <- NewInput.MMCK(lambda=input$lambda, mu=input$no_served, c=c, k = input$capacity)
+          }
         }
       }
+
       
       # Create queue class object
       output_m <- QueueingModel(input_m)
@@ -166,7 +209,16 @@ shinyServer(function(input, output, session) {
       evaluation <<- rbind(evaluation, el())
     }
     
-    tmp <- data.frame(`Average arrival rate (lambda)` = evaluation$lambda, `Service rate (mu)` = evaluation$mu)
+    tmp <- data.frame(`Avg. arrival rate (lambda)` = evaluation$lambda, 
+                      `Service rate (mu)` = evaluation$mu, 
+                      `Number of servers` = evaluation$c,
+                      `System capacity (k)` = evaluation$k,
+                      `Prob. of 0 in queue (P0)` = evaluation$P0,
+                      Throughput = evaluation$Throughput,
+                      #`Prob. of k in queue (Pk)` = evaluation$Pk,
+                      `Avg. queue length (Lq)` = evaluation$Lq,
+                      `Avg. waiting time of an arrival (Wq)` = evaluation$Wq,
+                      check.names = FALSE)
     
     #Probability of zero unit in the queue (Po)
     #average queue length (Lq )
