@@ -19,7 +19,7 @@ shinyUI(
                 width = 400,
                 column(width=11, 
                        fileInput("arrivals", 
-                                 "Arrival data",
+                                 "Queuing system data",
                                  accept = c(
                                    "text/csv",
                                    "text/comma-separated-values,text/plain",
@@ -45,8 +45,11 @@ shinyUI(
                              max = 100, 
                              value = 5.5),
                         sliderInput('n_servers', "Number of servers",1,10,1),
-                        numericInput('capacity', 'System capacity ( 0 = no limit )', min = 0, max = 50000, value=0),
-                        actionButton('simulate', 'Simulate data'),
+                        #numericInput('capacity', 'System capacity ( 0 = no limit )', min = 0, max = 50000, value=0),
+                        actionButton('simulate', 'Calculate system performance'),
+                        h2('Costs'),
+                        numericInput('waitingcost', 'Waiting cost per unit', 1),
+                        numericInput('servicecost', 'Service cost per server', 1),
                         actionButton('save', 'Save Results')
                 )          
               ),
@@ -54,35 +57,13 @@ shinyUI(
             dashboardBody(
                 h2("Input data distribution"),
                 plotlyOutput('inputdist'),
-                h2('Simulation of 50 periods'),
-                #plotOutput("dist"),
-                plotlyOutput('dist'),
                 h2('Model Report'),
                 textOutput("report"),
-                #plotlyOutput("animation")
                 h2('Model Comparison'),
-                tableOutput("eval")
+                tableOutput("eval"),
+                h2('Costs'),
+                plotlyOutput('costplot')
             )
         )
     )
 )
-
-# selectInput('population',
-#             label = "Population",
-#             choices = c('limited', 'unlimited'),
-#             selected = 'unlimited',
-#             multiple = FALSE,
-# ),
-# selectInput('arrivals_put',
-#             label = "Arrivals per unit time",
-#             choices = c('Poisson', 'Random'),
-#             selected = 'Poisson',
-#             multiple = FALSE,
-# ),
-# selectInput('cust_bhvr',
-#             label = "Customer behavior",
-#             choices = c('patient', 'balk and renegade'),
-#             selected = 'patient',
-#             multiple = FALSE,
-# ),
-#conditionalPanel("input.arrivals_put == 'Poisson'", 
