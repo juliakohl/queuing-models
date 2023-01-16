@@ -175,6 +175,7 @@ shinyServer(function(input, output, session) {
   
   evaluation <- data.frame()
   data <- NULL
+  profit_df <- NULL
   
   observeEvent(input$read, {
     inFile <- input$arrivals
@@ -238,13 +239,6 @@ shinyServer(function(input, output, session) {
       }else{
         queue[n] <<- a
       }
-      
-      # if(input$capacity > 0){
-      #   if(queue[n] > input$capacity){
-      #     overflow[n] <<- queue[n] - input$capacity
-      #     queue[n] <<- queue[n] - overflow[n]
-      #   }
-      # }
       
       n <- n+1
     }
@@ -370,7 +364,6 @@ shinyServer(function(input, output, session) {
     output$breakeven <- renderPlotly({
       
       data <- calculateBE()
-      cat(data)
       t <- seq(1,length(data),1)
       df <- data.frame(Time = t, Profit = data)
       
@@ -379,75 +372,116 @@ shinyServer(function(input, output, session) {
       
     })
     
-    
-    calculateBE <- function(wcpu = input$waitingcost, lambda = input$lambda, nl = input$lambda + input$add_ar, scps = input$servicecost, mu = input$no_served, nm = input$no_served + input$add_sr, c = input$n_servers, nc = input$n_servers + input$add_c){
-      costs <- c()
-      rev <- c()
-      cumprofit <- c()
-      continue <- TRUE
-      n <- 1
-      i <- 1
-      
-      while(continue){
-        
-        if(lambda >= mu){
-          return(NULL)
-        }
-        
-        if(c == 1){
-          input_m <- NewInput.MM1(lambda = lambda, mu = mu, n = 0)
-        }else{
-          if(c > 1){
-            input_m <- NewInput.MMC(lambda = lambda, mu = mu, c = c, n = 0, method = 0)
-          }
-        }
-        
-        # Create queue class object
-        output_m <- QueueingModel(input_m)
-        
-        L <- output_m$L
-        Rev <- output_m$Throughput * input$revenue
-        tmp <- wcpu * L + scps * c
-        p <- Rev - tmp
-        
-        if(nc == 1){
-          input_m <- NewInput.MM1(lambda = nl, mu = nm, n = 0)
-        }else{
-          if(nc > 1){
-            input_m <- NewInput.MMC(lambda = nl, mu = nm, c = nc, n = 0, method = 0)
-          }
-        }
-        
-        # Create queue class object
-        output_m <- QueueingModel(input_m)
-        
-        Ln <- output_m$L
-        Revn <- output_m$Throughput * input$revenue
-        tmpn <- wcpu * Ln + scps * nc
-        pn <- Revn - tmpn
-
-        
-        if(length(cumprofit)==0){
-          improvement_cost <- input$trainingcost * input$add_sr + input$marketingcost * input$add_ar + input$hiringcost * input$add_c
-          cumprofit <- pn - p - improvement_cost
-        }else{
-          np <- cumprofit[length(cumprofit)]+pn-p
-          cumprofit <- c(cumprofit, np)
-          if(cumprofit[length(cumprofit)] > 0){
-            n <- n+1
-          }
-        }
-        
-        if((n>5) | (i > 100)){
-          continue <- FALSE
-        }
-        i <- i+1
+    if(c == 1){
+      input_m <- NewInput.MM1(lambda = input$lambda, mu = input$no_served, n = 0)
+    }else{
+      if(c > 1){
+        input_m <- NewInput.MMC(lambda=input$lambda, mu = input$no_served, c=input$n_servers, n=0, method=0)
       }
-      return(cumprofit)
     }
+    
+    # Create queue class object
+    output_m <- QueueingModel(input_m)
+    Tp <- output_m$Throughput
+    base_profit <- Tp * input$revenue
+    
+    base <- c(base_profit)
+    for(i in 2:20){
+      tmp <- base[length(base)]
+      base <- c(base, tmp+base_profit)
+    }
+    
+    profit_df <<- data.frame(Profit = base, check.names = FALSE)
+    
   })
   
+  m <<- 1
+  observeEvent(input$compare, {
+    
+    plus <- calculateBE()
+    if(length(plus) > 20){
+      plus <- plus[1:20]
+    }
+    
+    profit_df$`Additional Profit` <<- paste(round(plus,2),'€')
+    profit_df$`Uplift %` <<- paste(round(plus/profit_df$Profit,2),'%')
+    colnames(profit_df)[ncol(profit_df)-1] <<- paste(colnames(profit_df)[ncol(profit_df)-1],' ',as.character(m))
+    colnames(profit_df)[ncol(profit_df)] <<- paste(colnames(profit_df)[ncol(profit_df)],' ',as.character(m))
+    m <<- m+1
+        
+    output$results <- function () {
+      profit_df %>% 
+        knitr::kable("html") %>%
+        kable_styling("striped", full_width = T)
+    }
+    
+  })
   
+  calculateBE <- function(wcpu = input$waitingcost, lambda = input$lambda, nl = input$lambda + input$add_ar, scps = input$servicecost, mu = input$no_served, nm = input$no_served + input$add_sr, c = input$n_servers, nc = input$n_servers + input$add_c){
+    costs <- c()
+    rev <- c()
+    cumprofit <- c()
+    continue <- TRUE
+    n <- 1
+    i <- 1
+    
+    while(continue){
+      
+      if(lambda >= mu){
+        return(NULL)
+      }
+      
+      if(c == 1){
+        input_m <- NewInput.MM1(lambda = lambda, mu = mu, n = 0)
+      }else{
+        if(c > 1){
+          input_m <- NewInput.MMC(lambda = lambda, mu = mu, c = c, n = 0, method = 0)
+        }
+      }
+      
+      # Create queue class object
+      output_m <- QueueingModel(input_m)
+      
+      L <- output_m$L
+      Rev <- output_m$Throughput * input$revenue
+      tmp <- wcpu * L + scps * c
+      p <- Rev - tmp
+      
+      if(nc == 1){
+        input_m <- NewInput.MM1(lambda = nl, mu = nm, n = 0)
+      }else{
+        if(nc > 1){
+          input_m <- NewInput.MMC(lambda = nl, mu = nm, c = nc, n = 0, method = 0)
+        }
+      }
+      
+      # Create queue class object
+      output_m <- QueueingModel(input_m)
+      
+      Ln <- output_m$L
+      Revn <- output_m$Throughput * input$revenue
+      tmpn <- wcpu * Ln + scps * nc
+      pn <- Revn - tmpn
+      
+      
+      if(length(cumprofit)==0){
+        improvement_cost <- input$trainingcost * input$add_sr + input$marketingcost * input$add_ar + input$hiringcost * input$add_c
+        cumprofit <- pn - p - improvement_cost
+      }else{
+        np <- cumprofit[length(cumprofit)]+pn-p
+        cumprofit <- c(cumprofit, np)
+        if(cumprofit[length(cumprofit)] > 0){
+          n <- n+1
+        }
+      }
+      
+      if((n>1) & (i >= 20)){
+        continue <- FALSE
+      }
+      i <- i+1
+    }
+    return(cumprofit)
+  }
   
 })
 

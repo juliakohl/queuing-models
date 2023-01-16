@@ -26,17 +26,17 @@ COPY shiny-customized.config /etc/shiny-server/shiny-server.conf
 
 # install renv & restore packages
 RUN Rscript -e 'install.packages("shiny")'
-RUN Rscript -e 'install.packages("renv")'
 RUN Rscript -e 'install.packages("shinyjs")'
+RUN Rscript -e 'install.packages("renv")'
+RUN Rscript -e 'install.packages("queueing")'
 RUN Rscript -e 'install.packages("readr")'
 RUN Rscript -e 'install.packages("readxl")'
 RUN Rscript -e 'install.packages("plotly")'
 RUN Rscript -e 'install.packages("kableExtra")'
 RUN Rscript -e 'install.packages("shinydashboard")'
 RUN Rscript -e 'install.packages("flexdashboard")'
-RUN Rscript -e 'install.packages("shinycssloaders")'
 RUN Rscript -e 'install.packages("shinyWidgets")'
-RUN Rscript -e 'install.packages("queueing")'
+RUN Rscript -e 'install.packages("fitdistrplus")'
 
 # install all packages in subfolders
 # RUN grep library $1/*.R | cut -d \( -f 2 | cut -d \) -f 1 | while read line; do R -e "install.packages('$line', repos='https://cran.rstudio.com/')"; done

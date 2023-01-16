@@ -2,10 +2,9 @@ library(shiny)
 library(plotly)
 library(flexdashboard)
 library(shinydashboard)
-library(shinyjs)
-library(shinycssloaders)
+#library(shinyjs)
+#library(shinycssloaders)
 library(shinyWidgets)
-library(plotly)
 library(kableExtra)
 
 # Define UI for application that draws a histogram
@@ -47,37 +46,46 @@ shinyUI(
                         sliderInput('n_servers', "Number of servers",1,10,1),
                         #numericInput('capacity', 'System capacity ( 0 = no limit )', min = 0, max = 50000, value=0),
                         #actionButton('simulate', 'Calculate system performance'),
-                        h2('Monetary value'),
-                        numericInput('waitingcost', 'Waiting cost per unit', 1),
-                        numericInput('servicecost', 'Service cost per server', 4),
-                        numericInput('revenue', 'Revenue per unit served', 8),
-                        numericInput('trainingcost', 'Cost to improve service rate by 1', 10),
-                        numericInput('marketingcost', 'Cost to increase arrival rate by 1', 5),
-                        numericInput('hiringcost', 'Cost to add another server', 20),
                         actionButton('save', 'Start Calculation!')
                 )          
               ),
           
             dashboardBody(
-                h2("Input data distribution"),
-                plotlyOutput('inputdist'),
-                h2('Model Report'),
-                textOutput("report"),
-                h2('Model Comparison'),
-                tableOutput("eval"),
-                h2('Costs'),
-                plotlyOutput('costplot'),
-                h2('Revenue'),
-                plotlyOutput('revplot'),
-                h2('Profit'),
-                plotlyOutput('proplot'),
-                h2('Break Even'),
-                inputPanel(
-                  numericInput('add_sr', 'Increase service rate by ...', 0.5),
-                  numericInput('add_ar', 'Increase arrival rate by ...', 0.5),
-                  numericInput('add_c', 'Add ... servers', 1)
-                ),
-                plotlyOutput('breakeven')
+              tabsetPanel(type = "tabs",
+                          tabPanel("Input data",
+                            h2("Input data distribution"),
+                            plotlyOutput('inputdist'),
+                            h2('Model Report'),
+                            textOutput("report"),
+                            h2('Model Comparison'),
+                            tableOutput("eval")
+                          ),
+                          tabPanel("Monetary analysis",
+                            inputPanel(
+                                   numericInput('waitingcost', 'Waiting cost per unit', 1),
+                                   numericInput('servicecost', 'Service cost per server', 4),
+                                   numericInput('revenue', 'Revenue per unit served', 8),
+                                   numericInput('trainingcost', 'Cost to improve service rate by 1', 10),
+                                   numericInput('marketingcost', 'Cost to increase arrival rate by 1', 5),
+                                   numericInput('hiringcost', 'Cost to add another server', 20)
+                            ),
+                            h2('Costs'),
+                            plotlyOutput('costplot'),
+                            h2('Revenue'),
+                            plotlyOutput('revplot'),
+                            h2('Profit'),
+                            plotlyOutput('proplot'),
+                            h2('Break Even'),
+                            inputPanel(
+                              numericInput('add_sr', 'Increase service rate by ...', 0.5),
+                              numericInput('add_ar', 'Increase arrival rate by ...', 0.5),
+                              numericInput('add_c', 'Add ... servers', 1)
+                            ),
+                            plotlyOutput('breakeven'),
+                            actionButton('compare', 'Save for comparison'),
+                            tableOutput('results')
+                          )
+              )
             )
         )
     )
