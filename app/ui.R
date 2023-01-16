@@ -47,9 +47,10 @@ shinyUI(
                         sliderInput('n_servers', "Number of servers",1,10,1),
                         #numericInput('capacity', 'System capacity ( 0 = no limit )', min = 0, max = 50000, value=0),
                         actionButton('simulate', 'Calculate system performance'),
-                        h2('Costs'),
+                        h2('Monetary value'),
                         numericInput('waitingcost', 'Waiting cost per unit', 1),
-                        numericInput('servicecost', 'Service cost per server', 1),
+                        numericInput('servicecost', 'Service cost per server', 4),
+                        numericInput('revenue', 'Revenue per unit served', 8),
                         actionButton('save', 'Save Results')
                 )          
               ),
@@ -62,7 +63,11 @@ shinyUI(
                 h2('Model Comparison'),
                 tableOutput("eval"),
                 h2('Costs'),
-                plotlyOutput('costplot')
+                plotlyOutput('costplot'),
+                h2('Revenue'),
+                plotlyOutput('revplot'),
+                h2('Profit'),
+                plotlyOutput('proplot')
             )
         )
     )
