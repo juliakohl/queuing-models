@@ -221,7 +221,7 @@ shinyServer(function(input, output, session) {
     
   })
   
-  observeEvent(input$simulate, {
+  observeEvent(input$read, {
     
     arrivals <<- round(rpois(30,input$lambda))
     queue <<- rep(0,30)
@@ -259,32 +259,21 @@ shinyServer(function(input, output, session) {
     # })
     
     
+  })
+  
+  observeEvent(input$save, {
+    
     output$report <- renderText({
-      #x <<- data %>% group_by_at(input$column) %>% summarise(n = n()) %>% group_by(n) %>% summarise(count = n())
-      #x <<- rbind(x, c(0, input$totalunits - sum(x$count)))
-      
-      #m <<- x$n * x$count
-      #lambda <<- sum(m) / input$totalunits
-      #if(input$capacity == 0){
-        if(input$n_servers == 1){
-          input_m <- NewInput.MM1(lambda = input$lambda, mu = input$no_served, n = 0)
-        }else{
-          if(input$n_servers > 1){
-            c = input$n_servers
-            input_m <- NewInput.MMC(lambda=input$lambda, mu=input$no_served, c=c, n=0, method=0)
-          }
-        }
-      # }else{
-      #   if(input$n_servers == 1){
-      #     input_m <- NewInput.MM1K(lambda = input$lambda, mu = input$no_served, k = input$capacity)
-      #   }else{
-      #     if(input$n_servers > 1){
-      #       c = input$n_servers
-      #       input_m <- NewInput.MMCK(lambda=input$lambda, mu=input$no_served, c=c, k = input$capacity)
-      #     }
-      #   }
-      # }
 
+      if(input$n_servers == 1){
+        input_m <- NewInput.MM1(lambda = input$lambda, mu = input$no_served, n = 0)
+      }else{
+        if(input$n_servers > 1){
+          c = input$n_servers
+          input_m <- NewInput.MMC(lambda=input$lambda, mu=input$no_served, c=c, n=0, method=0)
+        }
+      }
+      
       
       # Create queue class object
       output_m <- QueueingModel(input_m)
@@ -292,17 +281,12 @@ shinyServer(function(input, output, session) {
         output_m[i][[1]] <- round(output_m[i][[1]],2)
       }
       
-      #View(summary(output_m)$el)
-      
       # Get queue model report
       y <- capture.output(Report(output_m))
       return(y)
     })
     
     
-  })
-  
-  observeEvent(input$save, {
     if(nrow(evaluation)==0){
       evaluation <<- el()
     }else{
@@ -381,9 +365,89 @@ shinyServer(function(input, output, session) {
       
       fig
     })
+    
+    
+    output$breakeven <- renderPlotly({
+      
+      data <- calculateBE()
+      cat(data)
+      t <- seq(1,length(data),1)
+      df <- data.frame(Time = t, Profit = data)
+      
+      plot_ly(df, x=~Time, y=~Profit, type = 'bar')
+      
+      
+    })
+    
+    
+    calculateBE <- function(wcpu = input$waitingcost, lambda = input$lambda, nl = input$lambda + input$add_ar, scps = input$servicecost, mu = input$no_served, nm = input$no_served + input$add_sr, c = input$n_servers, nc = input$n_servers + input$add_c){
+      costs <- c()
+      rev <- c()
+      cumprofit <- c()
+      continue <- TRUE
+      n <- 1
+      i <- 1
+      
+      while(continue){
+        
+        if(lambda >= mu){
+          return(NULL)
+        }
+        
+        if(c == 1){
+          input_m <- NewInput.MM1(lambda = lambda, mu = mu, n = 0)
+        }else{
+          if(c > 1){
+            input_m <- NewInput.MMC(lambda = lambda, mu = mu, c = c, n = 0, method = 0)
+          }
+        }
+        
+        # Create queue class object
+        output_m <- QueueingModel(input_m)
+        
+        L <- output_m$L
+        Rev <- output_m$Throughput * input$revenue
+        tmp <- wcpu * L + scps * c
+        p <- Rev - tmp
+        
+        if(nc == 1){
+          input_m <- NewInput.MM1(lambda = nl, mu = nm, n = 0)
+        }else{
+          if(nc > 1){
+            input_m <- NewInput.MMC(lambda = nl, mu = nm, c = nc, n = 0, method = 0)
+          }
+        }
+        
+        # Create queue class object
+        output_m <- QueueingModel(input_m)
+        
+        Ln <- output_m$L
+        Revn <- output_m$Throughput * input$revenue
+        tmpn <- wcpu * Ln + scps * nc
+        pn <- Revn - tmpn
+
+        
+        if(length(cumprofit)==0){
+          improvement_cost <- input$trainingcost * input$add_sr + input$marketingcost * input$add_ar + input$hiringcost * input$add_c
+          cumprofit <- pn - p - improvement_cost
+        }else{
+          np <- cumprofit[length(cumprofit)]+pn-p
+          cumprofit <- c(cumprofit, np)
+          if(cumprofit[length(cumprofit)] > 0){
+            n <- n+1
+          }
+        }
+        
+        if((n>5) | (i > 100)){
+          continue <- FALSE
+        }
+        i <- i+1
+      }
+      return(cumprofit)
+    }
   })
   
-
+  
   
 })
 

@@ -46,12 +46,15 @@ shinyUI(
                              value = 5.5),
                         sliderInput('n_servers', "Number of servers",1,10,1),
                         #numericInput('capacity', 'System capacity ( 0 = no limit )', min = 0, max = 50000, value=0),
-                        actionButton('simulate', 'Calculate system performance'),
+                        #actionButton('simulate', 'Calculate system performance'),
                         h2('Monetary value'),
                         numericInput('waitingcost', 'Waiting cost per unit', 1),
                         numericInput('servicecost', 'Service cost per server', 4),
                         numericInput('revenue', 'Revenue per unit served', 8),
-                        actionButton('save', 'Save Results')
+                        numericInput('trainingcost', 'Cost to improve service rate by 1', 10),
+                        numericInput('marketingcost', 'Cost to increase arrival rate by 1', 5),
+                        numericInput('hiringcost', 'Cost to add another server', 20),
+                        actionButton('save', 'Start Calculation!')
                 )          
               ),
           
@@ -67,7 +70,14 @@ shinyUI(
                 h2('Revenue'),
                 plotlyOutput('revplot'),
                 h2('Profit'),
-                plotlyOutput('proplot')
+                plotlyOutput('proplot'),
+                h2('Break Even'),
+                inputPanel(
+                  numericInput('add_sr', 'Increase service rate by ...', 0.5),
+                  numericInput('add_ar', 'Increase arrival rate by ...', 0.5),
+                  numericInput('add_c', 'Add ... servers', 1)
+                ),
+                plotlyOutput('breakeven')
             )
         )
     )
