@@ -258,12 +258,11 @@ shinyServer(function(input, output, session) {
   observeEvent(input$save, {
     
     output$report <- renderText({
-
-      if(input$n_servers == 1){
+      c <- input$n_servers
+      if(c == 1){
         input_m <- NewInput.MM1(lambda = input$lambda, mu = input$no_served, n = 0)
       }else{
-        if(input$n_servers > 1){
-          c = input$n_servers
+        if(c > 1){
           input_m <- NewInput.MMC(lambda=input$lambda, mu=input$no_served, c=c, n=0, method=0)
         }
       }
@@ -280,14 +279,13 @@ shinyServer(function(input, output, session) {
       return(y)
     })
     
-    
     if(nrow(evaluation)==0){
       evaluation <<- el()
     }else{
       evaluation <<- rbind(evaluation, el())
     }
     
-    tmp <- data.frame(`Avg. arrival rate (lambda)` = evaluation$lambda, 
+    reportdf <- data.frame(`Avg. arrival rate (lambda)` = evaluation$lambda, 
                       `Service rate (mu)` = evaluation$mu, 
                       `Number of servers (c)` = evaluation$c,
                       `Prob. of 0 in queue (P0)` = evaluation$P0,
@@ -307,7 +305,7 @@ shinyServer(function(input, output, session) {
     
     output$eval <- function () {
       #evaluation %>% 
-      tmp %>% 
+      reportdf %>% 
         knitr::kable("html") %>%
         kable_styling("striped", full_width = T)
     }
@@ -345,33 +343,32 @@ shinyServer(function(input, output, session) {
     })
     
     output$proplot <- renderPlotly({
-      
+
       df <- costs_lambda()
-      fig <- plot_ly(df, x=~Profit, y=~Lambda, type = 'scatter', mode = 'lines', name = 'Arrival Rate')  %>% 
-        #add_trace(y=~y1+1, type = 'scatter', mode = 'lines', name = 'Cost of waiting time') %>% 
+      fig <- plot_ly(df, x=~Profit, y=~Lambda, type = 'scatter', mode = 'lines', name = 'Arrival Rate')  %>%
+        #add_trace(y=~y1+1, type = 'scatter', mode = 'lines', name = 'Cost of waiting time') %>%
         layout(yaxis = list(title= 'X'))
-      
+
       df <- costs_mu()
       fig <- fig %>% add_trace(x=df$Profit, y=df$Mu, type = 'scatter', mode = 'lines', name = 'Service rate')
-      
+
       df <- costs_c()
       fig <- fig %>% add_trace(x=df$Profit, y=df$C, type = 'scatter', mode = 'lines', name = 'Number of servers')
-      
+
       fig
     })
     
     
     output$breakeven <- renderPlotly({
-      
+
       data <- calculateBE()
       t <- seq(1,length(data),1)
       df <- data.frame(Time = t, Profit = data)
-      
+
       plot_ly(df, x=~Time, y=~Profit, type = 'bar')
-      
-      
     })
     
+    c <- input$n_servers
     if(c == 1){
       input_m <- NewInput.MM1(lambda = input$lambda, mu = input$no_served, n = 0)
     }else{
@@ -395,7 +392,7 @@ shinyServer(function(input, output, session) {
     
   })
   
-  m <<- 1
+  mmm <<- 1
   observeEvent(input$compare, {
     
     plus <- calculateBE()
@@ -405,9 +402,9 @@ shinyServer(function(input, output, session) {
     
     profit_df$`Additional Profit` <<- paste(round(plus,2),'€')
     profit_df$`Uplift %` <<- paste(round(plus/profit_df$Profit,2),'%')
-    colnames(profit_df)[ncol(profit_df)-1] <<- paste(colnames(profit_df)[ncol(profit_df)-1],' ',as.character(m))
-    colnames(profit_df)[ncol(profit_df)] <<- paste(colnames(profit_df)[ncol(profit_df)],' ',as.character(m))
-    m <<- m+1
+    colnames(profit_df)[ncol(profit_df)-1] <<- paste(colnames(profit_df)[ncol(profit_df)-1],' ',as.character(mmm))
+    colnames(profit_df)[ncol(profit_df)] <<- paste(colnames(profit_df)[ncol(profit_df)],' ',as.character(mmm))
+    mmm <<- mmm+1
         
     output$results <- function () {
       profit_df %>% 
