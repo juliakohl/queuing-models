@@ -445,10 +445,10 @@ shinyServer(function(input, output, session) {
       p <- Rev - tmp
       
       if(nc == 1){
-        input_m <- NewInput.MM1(lambda = nl, mu = nm, n = 0)
+        input_m <- NewInput.MM1(lambda = nl, mu = nm/c + nm/c*input$add_c, n = 0)
       }else{
         if(nc > 1){
-          input_m <- NewInput.MMC(lambda = nl, mu = nm, c = nc, n = 0, method = 0)
+          input_m <- NewInput.MMC(lambda = nl, mu = nm/c + nm/c*input$add_c, c = nc, n = 0, method = 0)
         }
       }
       
@@ -479,6 +479,86 @@ shinyServer(function(input, output, session) {
     }
     return(cumprofit)
   }
+  
+  output$arrivals_label <- renderUI({
+    HTML("Arrival data of the queuing system
+          <div class='tooltip'>
+            <button class='button circle_blue'><b>?</b></button>
+              <span class='tooltiptext smallerbox'>
+                <p>
+                  <b>Upload a .xlsx file with onw row representing one arrival:</b><br>
+                  <table>
+                  <thead>
+                    <tr>
+                      <th>Column 1</th><th>Arrival time</th><th> ... </th><th> Column n </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                      <td>1</td><td>09:24</td><td>...</td><td>...</td>
+                    </tr>
+                    <tr>
+                      <td>2</td><td>09:24</td><td>...</td><td>...</td>
+                    </tr>
+                    <tr>
+                      <td>3</td><td>09:26</td><td>...</td><td>...</td>
+                    </tr>
+                    </tbody>
+                  </table>
+                </p>
+              </span>
+          </div>")
+  })
+  
+  output$column_label <- renderUI({
+    HTML("Column of arrival time
+          <div class='tooltip'>
+            <button class='button circle_blue'><b>?</b></button>
+              <span class='tooltiptext smallerbox'>
+                <p>
+                  <b>In wich column is the arrival time? (Counting from one)</b><br>
+                </p>
+              </span>
+          </div>")
+  })
+  
+  output$units_label <- renderUI({
+    HTML("Total number of units in period
+          <div class='tooltip'>
+            <button class='button circle_blue'><b>?</b></button>
+              <span class='tooltiptext smallerbox'>
+                <p>
+                  <b>How many periods are in the uploaded dataset? e.g. data covers one hour -> Input = 60</b><br>
+                </p>
+              </span>
+          </div>")
+  })
+  
+  output$lambda_label <- renderUI({
+    HTML("Avg. number of arrivals per unit time (lambda)
+          <div class='tooltip'>
+            <button class='button circle_blue'><b>?</b></button>
+              <span class='tooltiptext smallerbox'>
+                <p>
+                  <b>How many customers are arriving per unit time on average?</b><br>
+                  This input field is automatically updated when arrival data is uploaded and read into the system.
+                </p>
+              </span>
+          </div>")
+  })
+  
+  output$mu_label <- renderUI({
+    HTML("Avg. number of customers served per unit time (mu)
+          <div class='tooltip'>
+            <button class='button circle_blue'><b>?</b></button>
+              <span class='tooltiptext smallerbox'>
+                <p>
+                  <b>How many customers are served per unit time?</b><br>
+                  Note that mu has to be greater than lambda.
+                </p>
+              </span>
+          </div>")
+  })
   
 })
 
