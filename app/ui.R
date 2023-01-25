@@ -65,7 +65,7 @@ shinyUI(
         )
         )
       ),
-      tags$head(tags$style("table th{padding: 7px; background-color: #D8142C!important; color: white}", 
+      tags$head(tags$style("table th{padding: 7px; background-color: #3c8dbc!important; color: white}", 
                            media="screen", type="text/css")),
       tags$head(tags$style("table td {padding: 7px;} table, th, td {border: 1px solid black; border-collapse: collapse;}",
                            media="screen", type="text/css")),
@@ -110,6 +110,7 @@ shinyUI(
               ),
           
             dashboardBody(
+              # seperate the Outputs in two tabs
               tabsetPanel(type = "tabs",
                           tabPanel("Input data",
                             h2("Input data distribution"),
@@ -124,9 +125,9 @@ shinyUI(
                                    numericInput('waitingcost', 'Waiting cost per unit', 1),
                                    numericInput('servicecost', 'Service cost per server', 4),
                                    numericInput('revenue', 'Revenue per unit served', 8),
-                                   numericInput('trainingcost', 'Cost to improve service rate by 1', 10),
-                                   numericInput('marketingcost', 'Cost to increase arrival rate by 1', 5),
-                                   numericInput('hiringcost', 'Cost to add another server', 20)
+                                   numericInput('trainingcost', 'Cost to improve service rate by 1', 150),
+                                   numericInput('marketingcost', 'Cost to increase arrival rate by 1', 50),
+                                   numericInput('hiringcost', 'Cost to add another server', 200)
                             ),
                             h2('Costs'),
                             plotlyOutput('costplot'),
@@ -134,14 +135,16 @@ shinyUI(
                             plotlyOutput('revplot'),
                             h2('Profit'),
                             plotlyOutput('proplot'),
-                            h2('Break Even'),
+                            h2('After how many time periods will the investments have generated a higher cumulative profit than the current system?'),
                             inputPanel(
-                              numericInput('add_sr', 'Increase service rate by ...', 0.5),
-                              numericInput('add_ar', 'Increase arrival rate by ...', 0.5),
+                              numericInput('add_sr', 'Increase service rate by ...', 0),
+                              numericInput('add_ar', 'Increase arrival rate by ...', 0),
                               numericInput('add_c', 'Add ... servers', 1)
                             ),
                             plotlyOutput('breakeven'),
+                            br(),
                             actionButton('compare', 'Save for comparison'),
+                            hr(),
                             tableOutput('results')
                           )
               )
