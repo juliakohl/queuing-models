@@ -427,6 +427,8 @@ shinyServer(function(input, output, session) {
     
     while(continue){
       
+      cat(' ',i)
+      
       if(c == 1){
         input_m <- NewInput.MM1(lambda = lambda, mu = mu*c, n = 0)
       }else{
@@ -471,7 +473,7 @@ shinyServer(function(input, output, session) {
         }
       }
       
-      if((n>1) & (i >= 20)){
+      if(((n>1) & (i >= 20)) | (i == 40)){
         continue <- FALSE
       }
       i <- i+1
