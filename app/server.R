@@ -99,7 +99,7 @@ shinyServer(function(input, output, session) {
         input_m <- NewInput.MM1(lambda = lambda, mu = m, n = 0)
       }else{
         if(c > 1){
-          input_m <- NewInput.MMC(lambda=lambda, mu=m*c, c=c, n=0, method=0)
+          input_m <- NewInput.MMC(lambda=lambda, mu=m, c=c, n=0, method=0)
         }
       }
       
@@ -142,7 +142,7 @@ shinyServer(function(input, output, session) {
         input_m <- NewInput.MM1(lambda = lambda, mu = m, n = 0)
       }else{
         if(c > 1){
-          input_m <- NewInput.MMC(lambda=lambda, mu=m*c, c=c, n=0, method=0)
+          input_m <- NewInput.MMC(lambda=lambda, mu=m, c=c, n=0, method=0)
         }
       }
       
@@ -354,7 +354,7 @@ shinyServer(function(input, output, session) {
       }
     })
     
-    if(lambda >= mu){
+    if(input$lambda >= (input$no_served+input$add_sr)*(input$n_servers+input$add_c)){
       showNotification("Error. Lambda can not be greater than mu.")
     }else{
       c <- input$n_servers
@@ -362,7 +362,7 @@ shinyServer(function(input, output, session) {
         input_m <- NewInput.MM1(lambda = input$lambda, mu = input$no_served, n = 0)
       }else{
         if(c > 1){
-          input_m <- NewInput.MMC(lambda=input$lambda, mu = input$no_served, c=input$n_servers, n=0, method=0)
+          input_m <- NewInput.MMC(lambda=input$lambda, mu = input$no_served*input$n_servers, c=input$n_servers, n=0, method=0)
         }
       }
       
@@ -420,7 +420,7 @@ shinyServer(function(input, output, session) {
     n <- 1
     i <- 1
     
-    if(lambda >= mu){
+    if(lambda >= nm*nc){
       showNotification("Error. Lambda can not be greater than mu.")
       break
     }
